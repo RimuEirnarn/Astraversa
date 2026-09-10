@@ -61,7 +61,6 @@ class Game(BaseGame):
         """Draw"""
         self.frame.draw()
 
-
     def run(self):
         """Run"""
         try:
@@ -77,7 +76,6 @@ class Game(BaseGame):
         self.frame.unload()
 
 def main():
-    game = Game()
 
 
     with initialize(
@@ -98,8 +96,8 @@ def main():
         )
     ):
         pr.set_target_fps(120)
-        game.load()
-        game.run()
+        game = Game()
+        game.start()
 
 if __name__ == '__main__':
     main()

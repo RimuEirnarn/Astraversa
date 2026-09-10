@@ -26,6 +26,14 @@ class BaseGame:
         """Draw"""
         pass
 
+    def start(self):
+        try:
+            self.load()
+        except Exception:
+            self.unload()
+            raise
+        self.run()
+
     def run(self):
         """Run"""
         try:

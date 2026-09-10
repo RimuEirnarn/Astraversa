@@ -278,7 +278,6 @@ def main():
     except FileNotFoundError:
         config = default_config
         write_config(CONFIG_PATH, config)
-    game = Game(config)
 
 
     with initialize(
@@ -296,8 +295,8 @@ def main():
         )
     ):
         pr.set_target_fps(config['max_fps'])
-        game.load()
-        game.run()
+        game = Game(config)
+        game.start()
 
 
 if __name__ == "__main__":

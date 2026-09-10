@@ -96,7 +96,6 @@ def test_shader():
     pr.close_window()
 
 def main():
-    game = Game()
     with initialize(
         WIDTH, HEIGHT,
         "Shader Test",
@@ -108,8 +107,8 @@ def main():
         )
     ):
         pr.set_target_fps(60)
-        game.load()
-        game.run()
+        game = Game()
+        game.start()
 
 if __name__ == "__main__":
     main()

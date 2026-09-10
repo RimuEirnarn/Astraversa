@@ -65,9 +65,6 @@ class Game(BaseGame):
         self.font_manager.unload()
 
 def main():
-    game = Game()
-
-
     with initialize(
         *RESOLUTION,
         "Desktop Jail",
@@ -82,8 +79,8 @@ def main():
         )
     ):
         pr.set_target_fps(60)
-        game.load()
-        game.run()
+        game = Game()
+        game.start()
 
 def test_rich_text_parse_tokens_are_cached():
     text = "**Hello** and *world*~~verbose~~"
