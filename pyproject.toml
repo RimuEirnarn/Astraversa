@@ -8,7 +8,7 @@ version = "0.0.1"
 dependencies = [
   "raylib"
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 authors = [
   {name = "Rimu Aerisya", email = "rimuaerisya@proton.me"},
 ]
@@ -34,9 +34,9 @@ where = ["src"]  # ["."]
 include = ["astraversa*"] 
 namespaces = false
 
-[tool.setuptools.package-data]
-astraversa = ["assets/**/*", "resources/**/*"]
+# [tool.setuptools.package-data]
+# astraversa = ["assets/**/*", "resources/**/*"]
 
-[tool.setuptools.package-dir]
-"astraversa.assets" = "assets"
-"astraversa.resources" = "resources"
+# [tool.setuptools.package-dir]
+# "astraversa.assets" = "assets"
+# "astraversa.resources" = "resources"

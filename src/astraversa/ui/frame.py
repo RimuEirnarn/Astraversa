@@ -1,11 +1,12 @@
 """Frame"""
 
-from line_profiler import profile
 import pyray as pr
 
+from astraversa.profiler import profile
 from astraversa.assets import Assets
-from astraversa.draw import draw_tiled_h, draw_tiled_v
+from astraversa.draw import TiledEdgeCache, draw_tiled_h, draw_tiled_v, draw_stretched_h, draw_stretched_v
 from astraversa.ui.base import Computed, UIElement
+from astraversa.ui.text import RichTextCache
 
 INACTIVE_PREFIX = "inactive_"
 ACTIVE_PREFIX = ""
@@ -18,6 +19,7 @@ class RootFrame(UIElement):
                  height: float | None = None,
                  background: pr.Color | tuple[int, int, int, int] = (0, 0, 0, 255),
                  scale: int = 2,
+                 resizable: bool = False,
                  visible: bool = True,
                  enabled: bool = True) -> None:
         self.width: float
@@ -35,6 +37,8 @@ class RootFrame(UIElement):
         self.vline_w = 2 * self.scale
         self.vline_h = 4 * self.scale
         self.background = background
+        self.edge_cache = TiledEdgeCache(max_entries=64)
+        self.resizable = resizable
 
     def load(self):
         for key, path in (
@@ -67,6 +71,8 @@ class RootFrame(UIElement):
         
         for children in self.children:
             children.unload()
+        
+        self.edge_cache.clear()
 
     def set_focus(self, focus: bool):
         self.focus = focus
@@ -90,6 +96,7 @@ class RootFrame(UIElement):
         for children in self.children:
             children.layout()
 
+    @profile
     def draw(self):
         """Frame"""
         prefix = 'i' if not self.focus else ''
@@ -109,6 +116,7 @@ class RootFrame(UIElement):
         pr.draw_rectangle(0, 0, int(w), int(h), self.background)
 
         if self.scale:
+            
             # ── Corners ──────────────────────────────────────────────
             # Top-left
             pr.draw_texture_ex(tl, pr.Vector2(0, 0), 0, scale, pr.WHITE)
@@ -119,15 +127,30 @@ class RootFrame(UIElement):
             # Bottom-right
             pr.draw_texture_ex(br, pr.Vector2(w - cw, h - cw), 0, scale, pr.WHITE)
 
-            # ── Horizontal edges (top and bottom) ────────────────────
             inner_w = int(w - cw * 2)
-            draw_tiled_h(hline, cw, 0, inner_w, scale)  # top
-            draw_tiled_h(hline, cw, int(h) - hline_h, inner_w, scale)  # bottom
-
-            # ── Vertical edges (left and right) ──────────────────────
             inner_h = int(h - cw * 2)
-            draw_tiled_v(vline, 0, cw, inner_h, scale)  # left
-            draw_tiled_v(vline, int(w) - vline_w, cw, inner_h, scale)  # right
+            
+            if self.resizable:
+                draw_stretched_h(hline, cw, 0, inner_w, hline_h)
+                draw_stretched_h(hline, cw, int(h) - hline_h, inner_w, hline_h)
+                draw_stretched_v(vline, 0, cw, inner_h, vline_w)
+                draw_stretched_v(vline, int(w) - vline_w, cw, inner_h, vline_w)
+            else:
+                top_tex = self.edge_cache.get_h(id(hline), hline, inner_w, scale, hline_h)
+                pr.draw_texture_pro(top_tex, pr.Rectangle(0, 0, inner_w, hline_h),
+                                    pr.Rectangle(cw, 0, inner_w, hline_h), pr.Vector2(0, 0), 0, pr.WHITE)
+
+                bot_tex = self.edge_cache.get_h(id(hline), hline, inner_w, scale, hline_h)
+                pr.draw_texture_pro(bot_tex, pr.Rectangle(0, 0, inner_w, hline_h),
+                                    pr.Rectangle(cw, int(h) - hline_h, inner_w, hline_h), pr.Vector2(0, 0), 0, pr.WHITE)
+
+                left_tex = self.edge_cache.get_v(id(vline), vline, inner_h, scale, vline_w)
+                pr.draw_texture_pro(left_tex, pr.Rectangle(0, 0, vline_w, inner_h),
+                                    pr.Rectangle(0, cw, vline_w, inner_h), pr.Vector2(0, 0), 0, pr.WHITE)
+
+                right_tex = self.edge_cache.get_v(id(vline), vline, inner_h, scale, vline_w)
+                pr.draw_texture_pro(right_tex, pr.Rectangle(0, 0, vline_w, inner_h),
+                                    pr.Rectangle(int(w) - vline_w, cw, vline_w, inner_h), pr.Vector2(0, 0), 0, pr.WHITE)
 
         # pr.draw_fps(vline_w + 2, hline_h + 2)
         for children in self.children:

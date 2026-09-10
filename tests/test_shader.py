@@ -3,8 +3,6 @@ from os.path import realpath
 from sys import path
 import pyray as pr
 
-path.insert(0, realpath(__file__+'/../../'))
-
 from astraversa.assets import Assets
 from astraversa.runner import ModuleFlag, initialize
 from astraversa.shaders import define, ShaderObject

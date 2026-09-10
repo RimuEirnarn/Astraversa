@@ -222,3 +222,5 @@ __marimo__/
 
 src/astraversa/assets/IBMPlexSans*
 src/astraversa.egg-info/*
+
+*.lprof

@@ -8,6 +8,7 @@ import pyray as pr
 
 TCallable = TypeVar("TCallable")
 
+UNLOAD_FUNCTIONS = []
 
 class ModuleFlag(IntEnum):
     audio = auto()
@@ -49,6 +50,10 @@ WINDOW_FLAG_BY_MODULE: dict[ModuleFlag, int] = {
 def window_flag_for_module(module: ModuleFlag) -> int | None:
     return WINDOW_FLAG_BY_MODULE.get(module)
 
+def atunload(func: Callable[[], None]):
+    """Unload functions for global objects."""
+    UNLOAD_FUNCTIONS.append(func)
+    return func
 
 @contextmanager
 def draw():
@@ -71,7 +76,7 @@ def initialize(width: int, height: int, title: str, modules: tuple[ModuleFlag, .
     for module in modules:
         if module == ModuleFlag.audio:
             pr.init_audio_device()
-            register(pr.close_audio_device)
+            atunload(pr.close_audio_device)
             continue
 
         window_flag = window_flag_for_module(module)
@@ -86,3 +91,8 @@ def initialize(width: int, height: int, title: str, modules: tuple[ModuleFlag, .
         yield []
     finally:
         pr.close_window()
+        for callback in UNLOAD_FUNCTIONS:
+            try:
+                callback()
+            except Exception:
+                pass

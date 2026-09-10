@@ -1,13 +1,22 @@
+from collections import OrderedDict
 from functools import lru_cache
 import re
 from typing import NamedTuple
 
-from line_profiler import profile
-from pyray import WHITE, Color, Font, get_font_default, measure_text_ex, draw_text_ex, Vector2, begin_scissor_mode, end_scissor_mode, draw_line_ex
+from pyray import (WHITE, Color, Font, Rectangle, RenderTexture, clear_background, draw_texture_rec, get_font_default,
+                   load_render_texture, measure_text_ex, draw_text_ex, Vector2, begin_scissor_mode, end_scissor_mode,
+                   draw_line_ex, Texture, unload_render_texture, set_texture_filter, TextureFilter, BlendMode as BlendEnum)
 
+from astraversa.profiler import profile
+from astraversa.modes import RenderTextureMode, BlendMode
+from astraversa.runner import atunload
 from astraversa.types import HorizontalAlignment, LayoutDirection, Pos2D, VerticalAlignment
 from astraversa.fonts import FontFamily
 from astraversa.ui.base import Padding, UIElement, Computed
+
+_measure_cache: dict[tuple, tuple[float, float]] = {}
+_MEASURE_CACHE_MAX = 4096
+
 
 class RendererStyle(NamedTuple):
     bold: bool = False
@@ -22,6 +31,17 @@ def measure_text(
     assert x.x != 0 and size != 0, "Font is not loaded"
     assert x.y != 0 and size != 0, "Font is not loaded"
     return x
+
+def measure_cached(font: Font, text: str, font_size: float, spacing: float) -> Vector2:
+    key = (id(font), text, font_size, spacing)
+    hit = _measure_cache.get(key)
+    if hit is not None:
+        return Vector2(hit[0], hit[1])
+    size = measure_text_ex(font, text, font_size, spacing)
+    if len(_measure_cache) >= _MEASURE_CACHE_MAX:
+        _measure_cache.clear()  # crude cap; swap for LRU if this matters
+    _measure_cache[key] = (size.x, size.y)
+    return size
 
 @lru_cache
 def measure_renderer(
@@ -57,9 +77,92 @@ class TextStyle:
 
 DEFAULT_TEXT_STYLE = TextStyle()
 
+class RichTextCache:
+    """Renders a rich-text block to an off-screen texture once and reuses
+    it every frame until the underlying text/style/font_size/spacing/color
+    changes. LRU-capped so long sessions with many dynamic labels don't
+    leak GPU memory."""
+
+    def __init__(self, max_entries: int = 256):
+        self.max_entries = max_entries
+        self._cache: OrderedDict[tuple, tuple[RenderTexture, float, float]] = OrderedDict()
+        atunload(self.clear)
+
+    def _touch(self, key):
+        self._cache.move_to_end(key)
+
+    def _evict_if_needed(self):
+        while len(self._cache) > self.max_entries:
+            _, (rt, _, _) = self._cache.popitem(last=False)
+            unload_render_texture(rt)
+
+    def _measure_block(self, family, text, font_size, spacing):
+        """First pass: figure out total width/height without drawing."""
+        cursor_x = 0.0
+        max_h = font_size
+        for clean_text, style in RichTextRenderer.parse_tokens(text):
+            font = family.get_font(style.bold, style.italic)
+            size = measure_text_ex(font, clean_text, font_size, spacing)
+            cursor_x += size.x
+            max_h = max(max_h, size.y)
+        return cursor_x, max_h
+
+    def _build(self, family, text, font_size, spacing, color) -> tuple[RenderTexture, float, float]:
+        width, height = self._measure_block(family, text, font_size, spacing)
+        width = max(1, int(width) + 1)
+        height = max(1, int(height) + 1)
+
+        rt = load_render_texture(width, height)
+        set_texture_filter(rt.texture, TextureFilter.TEXTURE_FILTER_POINT)
+        with RenderTextureMode(rt):
+            clear_background((0, 0, 0, 0))
+
+            cursor_x = 0.0
+            for clean_text, style in RichTextRenderer.parse_tokens(text):
+                font = family.get_font(style.bold, style.italic)
+                current_pos = Vector2(cursor_x, 0)
+                text_size = measure_text_ex(font, clean_text, font_size, spacing)
+                draw_text_ex(font, clean_text, current_pos, font_size, spacing, color)
+                if style.strikethrough:
+                    line_y = current_pos.y + font_size // 2
+                    start = Vector2(current_pos.x, line_y)
+                    end = Vector2(current_pos.x + text_size.x, line_y)
+                    draw_line_ex(start, end, 2, color)
+                cursor_x += text_size.x
+
+        return rt, width, height
+
+    def get(self, family, text: str, font_size: float, spacing: float, color: Color):
+        # color/font_size/spacing/text/family identity all matter — bake them into the key
+        key = (id(family), text, font_size, spacing, tuple(color) if not isinstance(color, tuple) else color) # type: ignore
+        hit = self._cache.get(key)
+        if hit is None:
+            rt, w, h = self._build(family, text, font_size, spacing, color)
+            self._cache[key] = (rt, w, h)
+            self._evict_if_needed()
+            return rt.texture, w, h
+        self._touch(key)
+        rt, w, h = hit
+        return rt.texture, w, h
+
+    def invalidate(self, family, text: str, font_size: float, spacing: float, color: Color):
+        """Call this when a specific block's content changes, so it re-renders
+        instead of serving stale cache."""
+        key = (id(family), text, font_size, spacing, tuple(color) if not isinstance(color, tuple) else color) # type: ignore
+        hit = self._cache.pop(key, None)
+        if hit is not None:
+            unload_render_texture(hit[0])
+
+    def clear(self):
+        for rt, _, _ in self._cache.values():
+            unload_render_texture(rt)
+        self._cache.clear()
+
 class RichTextRenderer:
     # Matches ***bold italic***, **bold**, *italic*, or regular plain text
     PATTERN = re.compile(r'(\*\*\*.+?\*\*\*|\*\*.+?\*\*|\*.+?\*|_.+?_|~~.+?~~|\\.|[^\*_~\\]+|.)')
+    cache = RichTextCache()
+    use_caching: bool = True
 
     @staticmethod
     @lru_cache(maxsize=256)
@@ -90,6 +193,7 @@ class RichTextRenderer:
 
         return tuple(tokens)
 
+    @profile
     @staticmethod
     def draw(
         family: FontFamily, 
@@ -99,13 +203,18 @@ class RichTextRenderer:
         spacing: float, 
         color: Color
     ):
+        if RichTextRenderer.use_caching:
+            tex, w, h = RichTextRenderer.cache.get(family, text, font_size, spacing, color)
+            with BlendMode(BlendEnum.BLEND_ALPHA_PREMULTIPLY):
+                draw_texture_rec(tex, Rectangle(0, 0, w, -h), position, WHITE)
+            return
         cursor_x = position.x
         cursor_y = position.y
 
         for clean_text, renderer_style in RichTextRenderer.parse_tokens(text):
             font = family.get_font(renderer_style.bold, renderer_style.italic)
             current_pos = Vector2(cursor_x, cursor_y)
-            text_size = measure_text_ex(font, clean_text, font_size, spacing)
+            text_size = measure_cached(font, clean_text, font_size, spacing)
             cursor_x += text_size.x
             
             draw_text_ex(font, clean_text, current_pos, font_size, spacing, color)
@@ -114,7 +223,6 @@ class RichTextRenderer:
                 start = Vector2(current_pos.x, line_y)
                 end = Vector2(current_pos.x + text_size.x, line_y)
                 draw_line_ex(start, end, 2, color)
-
 
 class Text(UIElement):
     """Text element"""
@@ -232,7 +340,7 @@ class Text(UIElement):
             self.layout()
         return None
 
-    # @profile
+    @profile
     def draw(self):
         """Render this text using computed geometry and resolved style."""
         if not self.visible:
@@ -469,6 +577,7 @@ class TextGroup(UIElement):
 
         return None
 
+    @profile
     def draw(self):
         """Draw children (no background by default)."""
         if not self.visible:

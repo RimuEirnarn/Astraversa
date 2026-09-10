@@ -1,6 +1,6 @@
 from sys import path
 from os.path import realpath
-from line_profiler import profile
+from astraversa.profiler import profile
 import pyray as pr
 
 
@@ -32,6 +32,7 @@ class Game(BaseGame):
         tg.add(Text("Hello, Cyrene~"))
         tg.add(Text(r"1 + 2 \*\* 3 \_ 5 __ 23 \*\* 3"))
         self.frame.children.append(tg)
+        self.frame_count = 0
 
     def load(self):
         """load"""
@@ -41,6 +42,9 @@ class Game(BaseGame):
 
     def update(self):
         """Update""" 
+        if pr.is_key_pressed(pr.KeyboardKey.KEY_SPACE):
+            RichTextRenderer.use_caching = not RichTextRenderer.use_caching
+        self.frame_count += 1
         self.frame.update()
         self.frame.layout()
 
@@ -54,6 +58,8 @@ class Game(BaseGame):
         try:
             while not pr.window_should_close():
                 self.update()
+                if self.frame_count > FRAME_COUNT_LIMIT:
+                    break
                 with draw():
                     self.draw()
         finally:
@@ -69,10 +75,10 @@ def main():
         *RESOLUTION,
         "Desktop Jail",
         (ModuleFlag.audio,
-                ModuleFlag.headless,
-                ModuleFlag.transparent,
-                ModuleFlag.msaa_4x,
-                ModuleFlag.always_run,
+                # ModuleFlag.headless,
+                # ModuleFlag.transparent,
+                # ModuleFlag.msaa_4x,
+                # ModuleFlag.always_run,
                 # ModuleFlag.maximized,
                 # ModuleFlag.unfocused,
                 # ModuleFlag.highdpi
