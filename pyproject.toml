@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "astraversa"
+version = "0.0.1"
+dependencies = [
+  "raylib"
+]
+requires-python = ">=3.14"
+authors = [
+  {name = "Rimu Aerisya", email = "rimuaerisya@proton.me"},
+]
+description = "Astraversa!"
+readme = "README.md"
+license = "BSD-3-Clause"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python"
+]
+
+[project.optional-dependencies]
+tracing=["psutil"]
+all = ["astraversa[tracing]"]
+
+[project.urls]
+Homepage = "https://github.com/RimuEirnarn/Astraversa"
+Repository = "https://github.com/RimuEirnarn/Astraversa.git"
+"Bug Tracker" = "https://github.com/RimuEirnarn/Astraversa/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]  # ["."]
+include = ["astraversa*"] 
+namespaces = false
+
+[tool.setuptools.package-data]
+astraversa = ["assets/**/*", "resources/**/*"]
+
+[tool.setuptools.package-dir]
+"astraversa.assets" = "assets"
+"astraversa.resources" = "resources"

@@ -1,0 +1,5 @@
+resolution = [ 1920, 1080, ]
+max_fps = 25
+unfocused_fps = 25
+bg_alpha = 94
+watch_processes = [ "notepad.exe", ]
