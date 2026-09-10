@@ -2,6 +2,7 @@
 from time import strftime
 
 import pyray as pr
+from astraversa.assets import Assets
 from astraversa.config import ConfigSchema
 from astraversa.draw import draw_tiled_h, draw_tiled_v
 from astraversa.frame_helper import is_on_frame
@@ -64,19 +65,20 @@ class Game(BaseGame):
         """load"""
 
         for key, path in (
-            ("frame_tl", "assets/{prefix}window_topleft.png"),
-            ("frame_tr", "assets/{prefix}window_topright.png"),
-            ("frame_bl", "assets/{prefix}window_botleft.png"),
-            ("frame_br", "assets/{prefix}window_botright.png"),
-            ("frame_v", "assets/{prefix}window_vertical.png"),
-            ("frame_h", "assets/{prefix}window_horizontal.png"),
+            ("frame_tl", "astra-assets:///{prefix}window_topleft.png"),
+            ("frame_tr", "astra-assets:///{prefix}window_topright.png"),
+            ("frame_bl", "astra-assets:///{prefix}window_botleft.png"),
+            ("frame_br", "astra-assets:///{prefix}window_botright.png"),
+            ("frame_v", "astra-assets:///{prefix}window_vertical.png"),
+            ("frame_h", "astra-assets:///{prefix}window_horizontal.png"),
         ):
-
-            active_texture = pr.load_texture(path.format(prefix=ACTIVE_PREFIX))
+            abspath_active = Assets.get(path.format(prefix=ACTIVE_PREFIX))
+            abspath_inactive = Assets.get(path.format(prefix=INACTIVE_PREFIX))
+            active_texture = pr.load_texture(str(abspath_active))
             pr.set_texture_filter(active_texture, pr.TextureFilter.TEXTURE_FILTER_POINT)
             self.active_frames[key] = active_texture
 
-            inactive_texture = pr.load_texture(path.format(prefix=INACTIVE_PREFIX))
+            inactive_texture = pr.load_texture(str(abspath_inactive))
             pr.set_texture_filter(
                 inactive_texture, pr.TextureFilter.TEXTURE_FILTER_POINT
             )
