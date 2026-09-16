@@ -1,15 +1,17 @@
 # pylint: disable=no-member
 from time import strftime
+from typing import TypedDict
+from toml import loads, dumps
 
 import pyray as pr
 from astraversa.storage import Storage
-from astraversa.config import ConfigSchema
 from astraversa.draw import draw_tiled_h, draw_tiled_v
 from astraversa.frame_helper import is_on_frame
 from astraversa.game import  BaseGame
 from astraversa.runner import ModuleFlag, initialize, draw
-from astraversa.config import ConfigSchema, load_config, write_config
 from astraversa.tracer import EventData, Watchdog
+
+type Resolution = tuple[int, int]
 
 CONFIG_PATH = "transient/config.toml"
 INACTIVE_PREFIX = "inactive_"
@@ -28,6 +30,25 @@ default_config: ConfigSchema = {
     "watch_processes": [],
     "bg_alpha": 91
 }
+
+class ConfigSchema(TypedDict):
+    """Configuration"""
+    resolution: Resolution
+    max_fps: int
+    unfocused_fps: int
+    bg_alpha: int
+    watch_processes: list[str]
+
+def load_config(path: str) -> ConfigSchema:
+    """Load config"""
+    with open(path, encoding='utf-8') as f:
+        return ConfigSchema(**loads(f.read()))
+
+def write_config(path: str, data: ConfigSchema):
+    """Write config"""
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(dumps(data))
+
 
 class Game(BaseGame):
     """Game instance"""
