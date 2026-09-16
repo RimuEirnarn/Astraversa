@@ -224,3 +224,6 @@ src/astraversa/assets/IBMPlexSans*
 src/astraversa.egg-info/*
 
 *.lprof
+transient/*
+!transient/config.toml
+!transient/README.md
