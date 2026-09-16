@@ -3,7 +3,7 @@
 import pyray as pr
 
 from astraversa.profiler import profile
-from astraversa.assets import Assets
+from astraversa.storage import Storage
 from astraversa.draw import TiledEdgeCache, draw_tiled_h, draw_tiled_v, draw_stretched_h, draw_stretched_v
 from astraversa.ui.base import Computed, UIElement
 from astraversa.ui.text import RichTextCache
@@ -49,8 +49,8 @@ class RootFrame(UIElement):
             ("frame_v", "astra-assets:///{prefix}window_vertical.png"),
             ("frame_h", "astra-assets:///{prefix}window_horizontal.png"),
         ):
-            abspath_active = Assets.get(path.format(prefix=ACTIVE_PREFIX))
-            abspath_inactive = Assets.get(path.format(prefix=INACTIVE_PREFIX))
+            abspath_active = Storage.get(path.format(prefix=ACTIVE_PREFIX))
+            abspath_inactive = Storage.get(path.format(prefix=INACTIVE_PREFIX))
             active_texture = pr.load_texture(str(abspath_active))
             pr.set_texture_filter(active_texture, pr.TextureFilter.TEXTURE_FILTER_POINT)
             self.textures[key] = active_texture

@@ -11,7 +11,7 @@ resources = Path(str(files('astraversa').joinpath('resources'))).resolve()
 class SchemeNotFound(Exception):
     """Scheme not found"""
 
-class AssetsManager:
+class StorageManager:
     def __init__(self) -> None:
         self._cache: dict[str, Path] = {}
         self._definitions: dict[str, Path] = {"res": Path("resources"), "assets": Path("assets"), "astra-res": resources, "astra-assets": assets}
@@ -49,6 +49,6 @@ class AssetsManager:
             if key.startswith(scheme):
                 del self._definitions[key]
 
-Assets = AssetsManager()
+Storage = StorageManager()
 
-__all__ = ['Assets']
+__all__ = ['Storage']

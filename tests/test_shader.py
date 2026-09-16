@@ -3,7 +3,7 @@ from os.path import realpath
 from sys import path
 import pyray as pr
 
-from astraversa.assets import Assets
+from astraversa.storage import Storage
 from astraversa.runner import ModuleFlag, initialize
 from astraversa.shaders import define, ShaderObject
 from astraversa.game import BaseGame
@@ -11,7 +11,7 @@ from astraversa.modes import RenderTextureMode
 
 WIDTH, HEIGHT = 800, 450
 
-@define(Assets.get("astra-res://glitch.fs"))
+@define(Storage.get("astra-res://glitch.fs"))
 class GlitchShader(ShaderObject):
     time: float
     intensity: float

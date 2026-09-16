@@ -1,7 +1,5 @@
 import pyray as pr
 
-
-
 from astraversa.frame_helper import is_on_frame
 from astraversa.game import BaseGame
 from astraversa.runner import ModuleFlag, draw, initialize
@@ -88,9 +86,9 @@ def main():
                 # ModuleFlag.headless,
                 ModuleFlag.transparent,
                 ModuleFlag.msaa_4x,
-                # ModuleFlag.always_run,
+                ModuleFlag.always_run,
                 # ModuleFlag.maximized,
-                # ModuleFlag.unfocused,
+                ModuleFlag.unfocused,
                 # ModuleFlag.passthrough,
                 ModuleFlag.highdpi
         )

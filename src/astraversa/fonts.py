@@ -2,20 +2,20 @@ from pathlib import Path
 
 import pyray as pr
 
-from astraversa.assets import Assets
+from astraversa.storage import Storage
 
 def load_font(name: str, size: int, bold: bool = False, italic: bool = False):
     bd = '-bold' if bold else ''
     it = '-italic' if italic else ''
     name = f"{name}{bd}{it}.ttf"
-    path = Assets.get(f"assets:///{name}")
+    path = Storage.get(f"assets:///{name}")
     
     if path.exists():
         font = pr.load_font_ex(str(path), size, None, 0)
         pr.set_texture_filter(font.texture, pr.TextureFilter.TEXTURE_FILTER_BILINEAR)
         return font
     
-    own = Assets.get(f"astra-assets:///{name}")
+    own = Storage.get(f"astra-assets:///{name}")
     if own.exists():
         font = pr.load_font_ex(str(own), size, None, 0)
         pr.set_texture_filter(font.texture, pr.TextureFilter.TEXTURE_FILTER_BILINEAR)
