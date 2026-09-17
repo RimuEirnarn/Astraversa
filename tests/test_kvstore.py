@@ -4,7 +4,7 @@ import pytest
 
 from astraversa.kvstore import InMemoryKVBackend, KVStore, register_common_codec
 from astraversa.db import SQLiteBackend, CachedSQLiteBackend
-
+from astraversa.profiler import profile
 
 test_array = []
 
@@ -15,6 +15,7 @@ class TypedKVStore(KVStore):
     key3: list = test_array
 
 class AdvKVStore(KVStore):
+    key0: str = "default_value"
     last_used: datetime = datetime(1970, 1, 1)
     resolution: tuple[int, int] = (1080, 800)
 
@@ -79,3 +80,55 @@ def test_advancedkv():
     with pytest.raises(TypeError):
         store.resolution = ("1920", 1080, 1) # type: ignore
     assert store.resolution != ("1920", 1080, 1)
+
+def setup_vars(store: KVStore):
+    store.key0 = "something"
+
+@profile
+def perf_check():
+    memstore = KVStore(InMemoryKVBackend())
+    sqlstore = KVStore(SQLiteBackend())
+    csqlstore = KVStore(CachedSQLiteBackend())
+
+    typedmemstore = TypedKVStore(InMemoryKVBackend())
+    typedsqlstore = TypedKVStore(SQLiteBackend())
+    typedcsqlstore = TypedKVStore(CachedSQLiteBackend())
+
+    advmemstore = AdvKVStore(InMemoryKVBackend())
+    advsqlstore = AdvKVStore(SQLiteBackend())
+    advcsqlstore = AdvKVStore(CachedSQLiteBackend())
+    now = datetime.now()
+
+    # -- WRITE
+    for _ in range(10_000):
+        # setup_vars(memstore)
+        # setup_vars(sqlstore)
+        # setup_vars(csqlstore)
+        
+        # setup_vars(typedmemstore)
+        # setup_vars(typedsqlstore)
+        # setup_vars(typedcsqlstore)
+        
+        advmemstore.resolution = (1920, 1080)
+        # advmemstore.last_used = now
+        # advsqlstore.last_used = now
+        # advcsqlstore.last_used = now
+
+
+    # -- READ
+    for _ in range(10_000):
+        # assert memstore.key0
+        # assert sqlstore.key0
+        # assert csqlstore.key0
+        
+        # assert typedmemstore.key0
+        # assert typedsqlstore.key0
+        # assert typedcsqlstore.key0
+        
+        assert advmemstore.resolution
+        # assert advmemstore.last_used
+        # assert advsqlstore.last_used
+        # assert advcsqlstore.last_used
+
+if __name__ == "__main__":
+    perf_check()

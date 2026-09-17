@@ -38,7 +38,7 @@ create table if not exists {self._table} (
             if default is not null:
                 return default
             raise KeyError(key)
-        print(data[0])
+        #print(data[0])
         return json.loads(data[0])
 
     def write(self, key: str, value: Any):
