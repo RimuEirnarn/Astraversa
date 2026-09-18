@@ -4,8 +4,13 @@ from queue import Empty, Queue
 from threading import Event, Thread
 from typing import Any, TypedDict
 
-import pythoncom
-import win32com.client
+try:
+    import pythoncom
+    import win32com.client
+except ImportError as e:
+    x = Exception("You shouldn't use this unmaintained module.")
+    x.add_note("If you're willing, install pythoncom")
+    raise x from e
 
 DispatcherEvent = Event()
 
