@@ -1,4 +1,4 @@
-# Stress testing report
+v# Stress testing report
 
 From `stresser.py`, using the O(2n) method is killing performance at 2—5 FPS. Really fast, Python. Well, whatever.
 
@@ -17,3 +17,9 @@ Yesterday, Claude an I were discussing about the stress testing. Several foundin
 ... I don't know what is up but I cannot replicate 400 FPS. Pretty sure it was actually reachable, why was it gone... Maybe because I was stripping it apart? I don't remember. But hey, I won't touch it.
 
 CFFI and Interpreted being an issue is a guarantee. But Python being hella slower than JS is a lot funnier, maybe because it's JIT?
+
+Using Numba was a mistake. JIT testing is unreliable for now as Windows default Python 3.14.7 has no JIT, so is 3.15rc2. Someone's spitting a hoax at me.
+
+## TL;DR
+
+Python is slow due to CFFI and it being interpreted. 100k object draws tanks FPS down to at worst 2 FPS.
