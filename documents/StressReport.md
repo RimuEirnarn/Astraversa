@@ -1,4 +1,4 @@
-v# Stress testing report
+# Stress testing report
 
 From `stresser.py`, using the O(2n) method is killing performance at 2—5 FPS. Really fast, Python. Well, whatever.
 
